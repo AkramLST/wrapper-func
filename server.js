@@ -7,21 +7,29 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new MongoClient(
-  "mongodb+srv://steampakistan:Test123@cluster0.voufv.mongodb.net/StemClub?retryWrites=true&w=majority",
-);
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  "mongodb+srv://steampakistan:Test123@cluster0.voufv.mongodb.net/StemClub?retryWrites=true&w=majority";
+
+const client = new MongoClient(MONGO_URI);
 
 let db;
 
-// Connect to MongoDB
+/**
+ * ✅ Safe DB connection (cached)
+ */
 async function connectDB() {
+  if (db) return db;
+
   try {
     await client.connect();
     console.log("MongoDB connected");
 
     db = client.db("StemClub");
+    return db;
   } catch (error) {
     console.error("DB connection error:", error);
+    throw error;
   }
 }
 
