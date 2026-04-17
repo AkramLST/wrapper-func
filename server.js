@@ -7,30 +7,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const MONGO_URI =
-  process.env.MONGO_URI ||
-  "mongodb+srv://steampakistan:Test123@cluster0.voufv.mongodb.net/StemClub?retryWrites=true&w=majority";
+const client = new MongoClient(
+  "mongodb+srv://steampakistan:Test123@cluster0.voufv.mongodb.net/StemClub?retryWrites=true&w=majority",
+);
 
-const client = new MongoClient(MONGO_URI);
+let cachedDb = null;
 
-let db;
-
-/**
- * ✅ Safe DB connection (cached)
- */
 async function connectDB() {
-  if (db) return db;
+  if (cachedDb) return cachedDb;
 
-  try {
-    await client.connect();
-    console.log("MongoDB connected");
+  await client.connect();
+  cachedDb = client.db("StemClub");
 
-    db = client.db("StemClub");
-    return db;
-  } catch (error) {
-    console.error("DB connection error:", error);
-    throw error;
-  }
+  return cachedDb;
 }
 
 app.get("/test", async (req, res) => {
@@ -41,35 +30,24 @@ app.get("/test", async (req, res) => {
 // 📌 API 1: Get all posts
 app.get("/posts", async (req, res) => {
   try {
+    const db = await connectDB(); // ✅ IMPORTANT FIX
+
     const { province, district, institute, dateFrom, dateTo, status } =
       req.query;
 
     let query = {};
 
     // Basic filters
-    if (province) {
-      query.province = province;
-    }
+    if (province) query.province = province;
+    if (district) query.district = district;
+    if (institute) query.institute = institute;
 
-    if (district) {
-      query.district = district;
-    }
-
-    if (institute) {
-      query.institute = institute;
-    }
-
-    // Date range filter (createdAt)
+    // Date filter
     if (dateFrom || dateTo) {
       query.createdAt = {};
 
-      if (dateFrom) {
-        query.createdAt.$gte = new Date(dateFrom);
-      }
-
-      if (dateTo) {
-        query.createdAt.$lte = new Date(dateTo);
-      }
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) query.createdAt.$lte = new Date(dateTo);
     }
 
     // Status logic
@@ -90,7 +68,7 @@ app.get("/posts", async (req, res) => {
 
     res.json(posts);
   } catch (error) {
-    console.error(error);
+    console.error("POSTS ERROR:", error);
     res.status(500).json({ error: "Failed to fetch posts" });
   }
 });
@@ -98,9 +76,10 @@ app.get("/posts", async (req, res) => {
 // 📌 API 2: Get all schools
 app.get("/schools", async (req, res) => {
   try {
+    const db = await connectDB();
+
     const limit = 6000;
     const page = parseInt(req.query.page) || 1;
-
     const skip = (page - 1) * limit;
 
     const schools = await db
