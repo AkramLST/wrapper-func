@@ -23,9 +23,10 @@ async function connectDB() {
   }
 }
 
-connectDB();
 app.get("/test", async (req, res) => {
   console.log("hi this is working");
+
+  res.send("Test route is working 🚀");
 });
 // 📌 API 1: Get all posts
 app.get("/posts", async (req, res) => {
