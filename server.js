@@ -7,7 +7,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new MongoClient(process.env.MONGO_URI);
+const client = new MongoClient(
+  "mongodb+srv://steampakistan:Test123@cluster0.voufv.mongodb.net/StemClub?retryWrites=true&w=majority",
+);
 
 let db;
 
