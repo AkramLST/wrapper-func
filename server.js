@@ -24,7 +24,9 @@ async function connectDB() {
 }
 
 connectDB();
-
+app.get("/test", async (req, res) => {
+  console.log("hi this is working");
+});
 // 📌 API 1: Get all posts
 app.get("/posts", async (req, res) => {
   try {
